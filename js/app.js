@@ -1402,18 +1402,8 @@ function showCandidateReport(uid){
 }
 
 // ── INIT ─────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded',()=>{
-  const fns=[
-    'navigate','selectUser','attemptLogin','fillCreds','togglePW',
-    'startFlow','startTest','retake','viewPastResult',
-    'pickAnswer','clearAns','toggleBk','setConf',
-    'prevQ','nextQ','jumpQ','confirmSubmit','submitTest','closeModal',
-    'flipCard','nextCard','prevCard','flashTopic',
-    'startRevision','studyConcept',
-    'clearData','forceSyncNow','showCandidateReport',
-    'buildNavHTML',
-  ];
-  fns.forEach(fn=>{ if(typeof window[fn]==='undefined') window[fn]=eval(fn); });
-  window.forceSyncNow=forceSyncNow;
+window.addEventListener('DOMContentLoaded', () => {
+  // All functions are already global (top-level function declarations).
+  // Just call render() — no eval tricks needed.
   render();
 });
