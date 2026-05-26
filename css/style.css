@@ -682,3 +682,45 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; tra
   .lb-row { grid-template-columns: 1fr; gap: .5rem; }
   .lb-vs { display: none; }
 }
+
+/* ── DAILY CHALLENGE ─────────────────────────────────────── */
+.daily-card { border-color: #BAE6FD; }
+.daily-card.active { border-color: #0EA5E9; background: linear-gradient(135deg, #F0F9FF, #fff); }
+.daily-card.done { border-color: #A7F3D0; background: #ECFDF5; }
+.daily-card.loading-card, .daily-card.offline-card { opacity: .75; }
+.dc-loading { color: var(--text2); font-size: .88rem; font-style: italic; padding: .25rem 0; }
+.dc-offline { font-size: .72rem; color: var(--text3); font-weight: 600; }
+.dc-done-tag { background: #D1FAE5; color: #065F46; padding: .2rem .6rem; border-radius: 99px; font-size: .72rem; font-weight: 800; }
+.dc-xp-tag { background: #FEF3C7; color: #92400E; padding: .2rem .6rem; border-radius: 99px; font-size: .72rem; font-weight: 800; }
+.dc-date { font-size: .8rem; font-weight: 700; color: #0EA5E9; margin-bottom: .4rem; }
+.dc-meta { display: flex; gap: .75rem; flex-wrap: wrap; font-size: .75rem; color: var(--text2); font-weight: 600; margin-bottom: .6rem; }
+.dc-concept-preview { display: flex; align-items: center; justify-content: space-between; padding: .5rem .7rem; background: rgba(14,165,233,.07); border: 1px solid #BAE6FD; border-radius: var(--r-sm); margin-bottom: .6rem; cursor: pointer; font-size: .78rem; color: var(--text2); gap: .5rem; }
+.dc-concept-preview:hover { background: rgba(14,165,233,.12); }
+.dc-read { color: #0EA5E9; font-weight: 700; flex-shrink: 0; }
+.dc-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* Daily Hero */
+.daily-hero { background: linear-gradient(135deg, #0EA5E9, #0284C7) !important; }
+.dh-badge { display: inline-block; background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3); padding: .2rem .65rem; border-radius: 99px; font-size: .72rem; font-weight: 800; letter-spacing: .08em; margin-bottom: .4rem; }
+.dh-source-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.src-tag { padding: .2rem .6rem; border-radius: 99px; font-size: .7rem; font-weight: 700; background: rgba(255,255,255,.2); }
+
+/* Daily question preview list */
+.daily-q-preview { display: flex; flex-direction: column; gap: .4rem; max-height: 320px; overflow-y: auto; }
+.dqp-row { display: flex; align-items: flex-start; gap: .6rem; padding: .5rem; border-radius: var(--r-sm); background: var(--bg); border: 1px solid var(--border); }
+.dqp-num { width: 22px; height: 22px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .65rem; font-weight: 800; flex-shrink: 0; margin-top: .1rem; }
+.dqp-q { font-size: .8rem; font-weight: 600; color: var(--text); margin-bottom: .1rem; }
+.dqp-topic { font-size: .68rem; color: var(--text3); font-weight: 600; }
+.dc-result-banner { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1rem; background: #D1FAE5; border-radius: var(--r-sm); font-size: .85rem; gap: .75rem; flex-wrap: wrap; }
+
+/* Concept of the Day */
+.concept-of-day { display: flex; gap: 1rem; align-items: flex-start; }
+.concept-of-day.large { flex-direction: column; }
+.cod-img { width: 100px; height: 70px; object-fit: cover; border-radius: var(--r-sm); flex-shrink: 0; }
+.cod-img.large { width: 100%; max-height: 200px; border-radius: var(--r-sm); }
+.cod-title { font-weight: 800; font-size: .95rem; color: var(--text); margin-bottom: .25rem; }
+.cod-title.large { font-size: 1.3rem; margin-bottom: .4rem; }
+.cod-topic-tag { display: inline-block; padding: .2rem .55rem; background: var(--primary-l); color: var(--primary); border-radius: 99px; font-size: .7rem; font-weight: 700; margin-bottom: .5rem; }
+.cod-text { font-size: .82rem; color: var(--text2); line-height: 1.7; }
+.cod-link { display: inline-block; margin-top: .6rem; color: #0EA5E9; font-size: .8rem; font-weight: 700; text-decoration: none; }
+.cod-link:hover { text-decoration: underline; }

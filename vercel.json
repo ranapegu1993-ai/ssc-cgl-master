@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/daily?refresh=true",
+      "schedule": "30 0 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -10,11 +16,11 @@
     },
     {
       "source": "/js/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
     },
     {
       "source": "/css/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
     },
     {
       "source": "/api/(.*)",

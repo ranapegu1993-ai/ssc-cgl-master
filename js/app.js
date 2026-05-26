@@ -11,6 +11,7 @@ const STATE = {
   bookmarked: new Set(), confidenceMap: {},
   lastAnalysis: null, lastResult: null, lastAnswers: {},
   flashcardIndex: 0, flashcardTopicIndex: 0, flashcardFlipped: false,
+  dailyContent: null, dailyLoading: false,
 };
 
 // ── USERS ────────────────────────────────────────────────────
@@ -40,9 +41,10 @@ function getLevelInfo(xp) {
 
 function calcXPGain(analysis, testType, streak) {
   const base = analysis.correct * 10 - analysis.wrong * 2;
-  const bonus = testType === 'full' ? 50 : 20;
-  const mult  = streak >= 7 ? 1.5 : streak >= 3 ? 1.2 : 1;
-  return Math.max(0, Math.round((base + bonus) * mult));
+  const bonus = testType === 'full' ? 50 : testType === 'daily' ? 30 : 20;
+  const dailyMult = testType === 'daily' ? 2 : 1;  // 2× XP for daily challenge
+  const streakMult = streak >= 7 ? 1.5 : streak >= 3 ? 1.2 : 1;
+  return Math.max(0, Math.round((base + bonus) * dailyMult * streakMult));
 }
 
 const BADGES = {
@@ -222,6 +224,8 @@ function render() {
     examiner:   ()=>{ app.innerHTML=renderExaminer();   },
     profile:    ()=>{ app.innerHTML=renderProfile();    bindProfile(); },
     revision:   ()=>{ app.innerHTML=renderRevision();   },
+    dailyTest:  ()=>{ app.innerHTML=renderDailyTest();  bindDailyTest(); },
+    dailyConcept:()=>{ app.innerHTML=renderDailyConcept(); },
   };
   (fn[STATE.view]||fn.login)();
 }
@@ -537,6 +541,9 @@ function renderDashboard(){
       </div>
     </div>`:''}
 
+    <!-- DAILY CHALLENGE CARD -->
+    ${renderDailyCard()}
+
     <!-- MINI LEADERBOARD -->
     <div class="section-card">
       <div class="sc-header"><h3>⚔️ You vs ${USERS[peerUid].name.split(' ')[0]}</h3></div>
@@ -603,6 +610,23 @@ function bindDashboard(){
     let start=0; const step=Math.ceil(target/30);
     const iv=setInterval(()=>{ start=Math.min(start+step,target); el.textContent=start; if(start>=target)clearInterval(iv); },40);
   });
+
+  // Fetch daily content and refresh the daily card when ready
+  if (!STATE.dailyContent && !STATE.dailyLoading) {
+    STATE.dailyLoading = true;
+    fetchDailyContent().then(data => {
+      STATE.dailyLoading = false;
+      if (data && STATE.view === 'dashboard') {
+        // Update just the daily card without full re-render
+        const placeholder = document.querySelector('.daily-card');
+        if (placeholder) {
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = renderDailyCard();
+          placeholder.replaceWith(wrapper.firstElementChild);
+        }
+      }
+    }).catch(() => { STATE.dailyLoading = false; });
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1402,6 +1426,219 @@ function showCandidateReport(uid){
 }
 
 // ── INIT ─────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════
+//  DAILY CHALLENGE — Fetch, Views, Logic
+// ══════════════════════════════════════════════════════════════
+
+// ─── Fetch daily content from /api/daily ─────────────────────
+async function fetchDailyContent() {
+  if (STATE.dailyContent) return STATE.dailyContent;
+  try {
+    const res = await fetch('/api/daily', { signal: AbortSignal.timeout(12000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    STATE.dailyContent = data;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Daily card on dashboard ──────────────────────────────────
+function renderDailyCard() {
+  const d = STATE.dailyContent;
+  const uid = STATE.currentUser?.id;
+  const data = getUserData(uid || '');
+  const today = new Date().toISOString().split('T')[0];
+  const doneToday = (data.results || []).some(r => r.testId === `daily_${today}`);
+
+  if (!d && STATE.dailyLoading) return `
+    <div class="section-card daily-card loading-card">
+      <div class="dc-loading">⏳ Loading today's challenge...</div>
+    </div>`;
+
+  if (!d) return `
+    <div class="section-card daily-card offline-card">
+      <div class="sc-header"><h3>📅 Daily Challenge</h3><span class="dc-offline">Offline</span></div>
+      <p>Connect to the internet to load today's questions scraped from current affairs.</p>
+    </div>`;
+
+  const sources = d.sources || {};
+  const sourceTags = [
+    sources.history > 0 ? `${sources.history} History` : null,
+    sources.currentAffairs > 0 ? `${sources.currentAffairs} Current Affairs` : null,
+    sources.math > 0 ? `${sources.math} Maths` : null,
+  ].filter(Boolean).join(' · ');
+
+  return `
+    <div class="section-card daily-card ${doneToday ? 'done' : 'active'}">
+      <div class="sc-header">
+        <h3>📅 Daily Challenge</h3>
+        ${doneToday ? '<span class="dc-done-tag">✅ Completed</span>' : '<span class="dc-xp-tag">2× XP Bonus!</span>'}
+      </div>
+      <div class="dc-date">${d.displayDate || today}</div>
+      <div class="dc-meta">
+        <span>📝 ${d.questions?.length || 0} Questions</span>
+        <span>🌐 ${sourceTags || 'Mixed Topics'}</span>
+        <span>⏱ ~10 min</span>
+      </div>
+      ${d.concept ? `
+        <div class="dc-concept-preview" onclick="navigate('dailyConcept')">
+          <span>💡 <strong>Concept of the Day:</strong> ${d.concept.title}</span>
+          <span class="dc-read">Read →</span>
+        </div>` : ''}
+      <div class="dc-actions">
+        ${doneToday
+          ? `<button class="btn-outline" onclick="viewPastResult('daily_${today}')">View Result</button>`
+          : `<button class="btn-primary" onclick="startDailyChallenge()">Start Challenge →</button>`}
+        ${d.concept ? `<button class="btn-outline" onclick="navigate('dailyConcept')">📖 Today's Concept</button>` : ''}
+      </div>
+    </div>`;
+}
+
+// ─── Start the daily test ─────────────────────────────────────
+function startDailyChallenge() {
+  const d = STATE.dailyContent;
+  if (!d?.questions?.length) { toast('Daily content not loaded yet.', 'error'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  STATE.currentTest = {
+    id: `daily_${today}`,
+    title: `Daily Challenge — ${d.displayDate || today}`,
+    type: 'daily',
+    topic: 'Mixed',
+    questions: d.questions,
+    duration: 600, // 10 minutes
+    totalMarks: d.questions.length * 2,
+    negativeMarking: 0.5,
+    instructions: [
+      `${d.questions.length} questions from today's current affairs & maths`,
+      '10 minutes time limit',
+      '+2 per correct, -0.5 per wrong',
+      '2× XP bonus for daily challenge!',
+    ],
+  };
+  STATE.currentAnswers = {}; STATE.currentQuestionIndex = 0;
+  STATE.bookmarked = new Set(); STATE.confidenceMap = {};
+  STATE.testStartTime = Date.now(); STATE.timeLeft = 0;
+  navigate('test');
+}
+
+// ─── Full daily test page ─────────────────────────────────────
+function renderDailyTest() {
+  const d = STATE.dailyContent;
+  const today = new Date().toISOString().split('T')[0];
+  if (!d?.questions?.length) return `
+    ${topbar('Daily Challenge')}
+    <div class="tests-page">
+      <div class="empty-state">
+        <div class="es-icon">📅</div>
+        <div class="es-title">No daily content yet</div>
+        <div class="es-sub">Check back once the internet connection is available.</div>
+        <button class="btn-primary" onclick="navigate('dashboard')">← Dashboard</button>
+      </div>
+    </div>`;
+
+  const sources = d.sources || {};
+  const data = getUserData(STATE.currentUser?.id || '');
+  const doneToday = (data.results || []).some(r => r.testId === `daily_${today}`);
+  const lastResult = (data.results || []).find(r => r.testId === `daily_${today}`);
+
+  return `
+  ${topbar('Daily Challenge')}
+  <div class="tests-page">
+    <div class="page-hero daily-hero">
+      <div class="dh-badge">📅 DAILY</div>
+      <h2>${d.displayDate || today}</h2>
+      <p>Freshly scraped from today's current affairs, history &amp; SSC maths</p>
+      <div class="dh-source-tags">
+        ${sources.history > 0 ? `<span class="src-tag wiki">🏛 ${sources.history} Wikipedia History</span>` : ''}
+        ${sources.currentAffairs > 0 ? `<span class="src-tag pib">🏛 ${sources.currentAffairs} PIB Current Affairs</span>` : ''}
+        ${sources.math > 0 ? `<span class="src-tag math">🔢 ${sources.math} Maths</span>` : ''}
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="sc-header"><h3>📝 Today's Questions</h3><span class="dc-xp-tag">2× XP</span></div>
+      <div class="daily-q-preview">
+        ${d.questions.map((q, i) => `
+          <div class="dqp-row">
+            <span class="dqp-num">${i + 1}</span>
+            <div class="dqp-info">
+              <div class="dqp-q">${q.q.slice(0, 80)}${q.q.length > 80 ? '...' : ''}</div>
+              <div class="dqp-topic">${q.topic} · ${q.subject}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:1rem">
+        ${doneToday && lastResult
+          ? `<div class="dc-result-banner">
+              <div>✅ Completed! Score: <strong>${lastResult.percentage}%</strong> · XP: <strong>+${lastResult.xpGain || 0}</strong></div>
+              <button class="btn-outline" onclick="viewPastResult('daily_${today}')">View Details</button>
+            </div>`
+          : `<button class="btn-primary lg" onclick="startDailyChallenge()">🚀 Start Challenge — 10 min</button>`}
+      </div>
+    </div>
+
+    ${d.concept ? `
+    <div class="section-card">
+      <div class="sc-header"><h3>💡 Concept of the Day</h3></div>
+      <div class="concept-of-day">
+        ${d.concept.thumbnail ? `<img src="${d.concept.thumbnail}" alt="${d.concept.title}" class="cod-img" onerror="this.remove()"/>` : ''}
+        <div class="cod-content">
+          <div class="cod-title">${d.concept.title}</div>
+          <div class="cod-text">${d.concept.summary}</div>
+          ${d.concept.url ? `<a href="${d.concept.url}" target="_blank" rel="noopener" class="cod-link">Read full article →</a>` : ''}
+        </div>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+function bindDailyTest() {}
+
+// ─── Concept of the Day standalone view ──────────────────────
+function renderDailyConcept() {
+  const d = STATE.dailyContent;
+  const concept = d?.concept;
+  if (!concept) return `
+    ${topbar('Concept of the Day')}
+    <div class="tests-page">
+      <div class="empty-state">
+        <div class="es-icon">💡</div>
+        <div class="es-title">No concept loaded</div>
+        <button class="btn-primary" onclick="navigate('dashboard')">← Dashboard</button>
+      </div>
+    </div>`;
+
+  return `
+  ${topbar('Concept of the Day')}
+  <div class="concept-page">
+    <div class="page-hero" style="background:linear-gradient(135deg,#0EA5E9,#0284C7)">
+      <h2>💡 Concept of the Day</h2>
+      <p>${d.displayDate || ''}</p>
+    </div>
+    <div class="section-card">
+      <div class="concept-of-day large">
+        ${concept.thumbnail ? `<img src="${concept.thumbnail}" alt="${concept.title}" class="cod-img large" onerror="this.remove()"/>` : ''}
+        <div class="cod-content">
+          <div class="cod-title large">${concept.title}</div>
+          <div class="cod-topic-tag">${concept.topic}</div>
+          <div class="cod-text">${concept.summary}</div>
+          ${concept.url ? `<a href="${concept.url}" target="_blank" rel="noopener" class="cod-link">📖 Read full Wikipedia article →</a>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="sc-header"><h3>📝 Test Your Knowledge</h3></div>
+      <p>Take today's Daily Challenge to answer questions based on this concept and current affairs.</p>
+      <div style="margin-top:.75rem">
+        <button class="btn-primary" onclick="navigate('dailyTest')">Take Daily Challenge →</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   // All functions are already global (top-level function declarations).
   // Just call render() — no eval tricks needed.
