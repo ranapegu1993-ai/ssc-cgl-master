@@ -1,0 +1,11 @@
+{
+  "name": "ssc-cgl-master",
+  "version": "1.0.0",
+  "description": "SSC CGL Complete Exam Preparation Platform",
+  "dependencies": {
+    "@vercel/kv": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
