@@ -10,7 +10,7 @@ const STATE = {
   timerInterval: null, timeLeft: 0, testStartTime: null,
   bookmarked: new Set(), confidenceMap: {},
   lastAnalysis: null, lastResult: null, lastAnswers: {},
-  flashcardIndex: 0, flashcardTopicIndex: 0, flashcardFlipped: false,
+  flashcardIndex: 0, flashcardTopicIndex: 0, flashcardFlipped: false, fcKnown: null, fcRating: null, _fcKeyHandler: null,
   dailyContent: null, dailyLoading: false,
 };
 
@@ -151,41 +151,104 @@ function badgeToast(badgeKey) {
 }
 
 // ── CONFETTI ─────────────────────────────────────────────────
-function launchConfetti(score) {
-  if (parseFloat(score) < 75) return;
-  let canvas = document.getElementById('confetti-canvas');
-  if (!canvas) {
-    canvas = document.createElement('canvas');
-    canvas.id = 'confetti-canvas';
-    canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;';
-    document.body.appendChild(canvas);
-  }
-  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+// ── PREMIUM CONFETTI ──────────────────────────────────────────
+function launchConfetti(score, mini = false) {
+  const threshold = mini ? 0 : 60;
+  if (!mini && parseFloat(score) < threshold) return;
+
+  const canvas = document.getElementById('confetti-canvas') || (() => {
+    const c = document.createElement('canvas');
+    c.id = 'confetti-canvas';
+    document.body.appendChild(c);
+    return c;
+  })();
+
+  const W = canvas.width  = window.innerWidth;
+  const H = canvas.height = window.innerHeight;
   const ctx = canvas.getContext('2d');
-  const cols = ['#6366F1','#0EA5E9','#F59E0B','#22C55E','#EF4444','#8B5CF6','#EC4899','#FFD93D'];
-  const particles = Array.from({length:160},()=>({
-    x: Math.random()*canvas.width, y: -20-Math.random()*canvas.height/2,
-    color: cols[Math.floor(Math.random()*cols.length)],
-    w: 6+Math.random()*8, h: 3+Math.random()*5,
-    vx: (Math.random()-.5)*3, vy: 2+Math.random()*4,
-    angle: Math.random()*Math.PI*2, spin: (Math.random()-.5)*.15, life:1
-  }));
-  let start = Date.now();
-  function draw() {
-    const elapsed = Date.now()-start;
-    if (elapsed>4000) { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.remove(); return; }
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+  const duration = mini ? 2500 : 4500;
+  const count    = mini ? 80  : 200;
+
+  // iOS vibrant colors
+  const COLORS = ['#5E5CE6','#0A84FF','#32D74B','#FF9F0A','#FF453A','#FF375F','#FFD60A','#64D2FF','#BF5AF2'];
+
+  // Particle types: rectangle, circle, ribbon
+  const SHAPES = ['rect','circle','ribbon'];
+
+  const particles = Array.from({length: count}, (_, i) => {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    return {
+      x: mini ? W/2 + (Math.random()-.5)*W*.4 : Math.random()*W,
+      y: mini ? H*.3  : -20 - Math.random()*H*.5,
+      color: COLORS[Math.floor(Math.random()*COLORS.length)],
+      shape: SHAPES[Math.floor(Math.random()*SHAPES.length)],
+      w: mini ? 5+Math.random()*7 : 7+Math.random()*10,
+      h: mini ? 3+Math.random()*4 : 4+Math.random()*7,
+      vx: side * (0.5 + Math.random()*3),
+      vy: mini ? -(2+Math.random()*5) : (1.5+Math.random()*4),
+      gravity: mini ? 0.12 : 0.06,
+      spin: (Math.random()-.5) * .22,
+      angle: Math.random()*Math.PI*2,
+      wobble: Math.random()*Math.PI*2,
+      wobbleSpeed: 0.05+Math.random()*0.08,
+    };
+  });
+
+  const start = Date.now();
+  let raf;
+
+  (function draw() {
+    const elapsed = Date.now() - start;
+    if (elapsed > duration) {
+      ctx.clearRect(0,0,W,H);
+      cancelAnimationFrame(raf);
+      return;
+    }
+
+    ctx.clearRect(0,0,W,H);
+
+    // Fade out in last 800ms
+    const alpha = elapsed > duration - 800
+      ? Math.max(0, 1 - (elapsed - (duration-800)) / 800)
+      : 1;
+
     particles.forEach(p => {
-      p.y+=p.vy; p.x+=p.vx; p.angle+=p.spin; p.vy+=.05;
-      if(p.y>canvas.height){p.y=-20;p.x=Math.random()*canvas.width;}
-      ctx.save(); ctx.globalAlpha=Math.max(0,1-elapsed/3800);
-      ctx.translate(p.x+p.w/2,p.y+p.h/2); ctx.rotate(p.angle);
-      ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      p.y += p.vy;
+      p.x += p.vx + Math.sin(p.wobble) * 0.8;
+      p.vy += p.gravity;
+      p.angle += p.spin;
+      p.wobble += p.wobbleSpeed;
+
+      // Reset particles that fall off screen
+      if (p.y > H + 20) {
+        p.y = -20; p.x = Math.random()*W;
+        p.vy = mini ? -(2+Math.random()*4) : 1.5+Math.random()*3;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w/2, 0, Math.PI*2);
+        ctx.fill();
+      } else if (p.shape === 'ribbon') {
+        ctx.beginPath();
+        ctx.moveTo(-p.w/2, 0);
+        ctx.quadraticCurveTo(0, -p.h*1.5, p.w/2, 0);
+        ctx.quadraticCurveTo(0, p.h*1.5, -p.w/2, 0);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      }
       ctx.restore();
     });
-    requestAnimationFrame(draw);
-  }
-  draw();
+
+    raf = requestAnimationFrame(draw);
+  })();
 }
 
 // ── TIMER ─────────────────────────────────────────────────────
@@ -203,6 +266,7 @@ function formatTime(s){ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=
 
 // ── ROUTER ────────────────────────────────────────────────────
 function navigate(view, params={}) {
+  if (STATE.view === 'flashcards' && view !== 'flashcards') cleanupFlashcardListeners?.();
   STATE.view=view; STATE.params=params; render(); window.scrollTo(0,0);
 }
 
@@ -1113,7 +1177,10 @@ function renderResults(){
 }
 
 function bindResults(){
-  launchConfetti(STATE.lastResult?.percentage||0);
+  const score = parseFloat(STATE.lastResult?.percentage || 0);
+  if (score >= 60) {
+    setTimeout(() => launchConfetti(score, false), 600);
+  }
 }
 
 function retake(){
@@ -1164,50 +1231,220 @@ function renderConceptPage(){
 // ══════════════════════════════════════════════════════════════
 //  VIEW: FLASHCARDS
 // ══════════════════════════════════════════════════════════════
-function renderFlashcards(){
-  const topics=Object.keys(CONCEPTS);
-  const topicIdx=STATE.flashcardTopicIndex%topics.length;
-  const topic=topics[topicIdx], c=CONCEPTS[topic];
-  const cardIdx=STATE.flashcardIndex%c.concepts.length, card=c.concepts[cardIdx];
+// ══════════════════════════════════════════════════════════════
+//  OPTIMISED FLASHCARDS — swipe, keyboard, rating, confetti
+// ══════════════════════════════════════════════════════════════
+function renderFlashcards() {
+  const topics   = Object.keys(CONCEPTS);
+  const topicIdx = STATE.flashcardTopicIndex % topics.length;
+  const topic    = topics[topicIdx];
+  const c        = CONCEPTS[topic];
+  const total    = c.concepts.length;
+  const cardIdx  = STATE.flashcardIndex % total;
+  const card     = c.concepts[cardIdx];
+  const done     = STATE.fcKnown ? STATE.fcKnown.size : 0;
+  const pct      = Math.round(done / total * 100);
+
   return `
   ${topbar('Flashcards')}
   <div class="flashcard-page">
-    <div class="page-hero"><h2>🃏 Concept Flashcards</h2><p>Tap the card to flip · Navigate through topics</p></div>
-    <div class="topic-selector">
-      ${topics.map((t,i)=>`<button class="ts-btn ${i===topicIdx?'active':''}" onclick="flashTopic(${i})">${CONCEPTS[t].icon} ${t}</button>`).join('')}
+    <div class="page-hero">
+      <h2>🃏 Concept Flashcards</h2>
+      <p>Tap to flip · Swipe or use arrow keys · Rate each card</p>
     </div>
-    <div class="fc-container">
-      <div class="fc ${STATE.flashcardFlipped?'flipped':''}" onclick="flipCard()">
+
+    <!-- Scrollable topic selector -->
+    <div class="fc-topic-scroll">
+      ${topics.map((t,i) => `
+        <button class="ts-btn ${i===topicIdx?'active':''}" onclick="flashTopic(${i})">
+          ${CONCEPTS[t].icon} ${t}
+        </button>`).join('')}
+    </div>
+
+    <!-- Topic progress -->
+    <div class="fc-topic-header">
+      <span style="font-size:.8rem;font-weight:700;color:var(--text2)">${c.icon} ${topic}</span>
+      <span style="font-size:.75rem;color:var(--text3)">${cardIdx+1} / ${total} · ${pct}% known</span>
+    </div>
+    <div class="fc-progress-bar">
+      <div class="fc-progress-fill" style="width:${pct}%"></div>
+    </div>
+
+    <!-- 3D Flip Card -->
+    <div class="fc-stage" id="fc-stage">
+      <div class="fc ${STATE.flashcardFlipped?'flipped':''}" id="fc-card" onclick="flipCard()">
         <div class="fc-front">
-          <div class="fc-label">${c.icon} ${topic}</div>
+          <span class="fc-chip">${c.icon} ${topic}</span>
           <div class="fc-q">${card.title}</div>
-          <div class="fc-hint">Tap to reveal →</div>
+          ${!STATE.flashcardFlipped ? `
+            <div class="fc-tap-hint">
+              <span>👆</span> Tap to reveal answer
+            </div>` : ''}
         </div>
         <div class="fc-back">
-          <div class="fc-label">${c.icon} ${topic}</div>
+          <span class="fc-chip">✅ Answer</span>
           <div class="fc-ans">${card.content}</div>
         </div>
       </div>
     </div>
+
+    <!-- Rating buttons (shown after flip) -->
+    ${STATE.flashcardFlipped ? `
+    <div class="fc-actions">
+      <button class="fc-action-btn skip ${STATE.fcRating===cardIdx+'skip'?'active':''}" onclick="rateCard('skip')">
+        <span class="fc-action-icon">😰</span>Again
+      </button>
+      <button class="fc-action-btn hard ${STATE.fcRating===cardIdx+'hard'?'active':''}" onclick="rateCard('hard')">
+        <span class="fc-action-icon">🤔</span>Hard
+      </button>
+      <button class="fc-action-btn known ${STATE.fcRating===cardIdx+'known'?'active':''}" onclick="rateCard('known')">
+        <span class="fc-action-icon">💪</span>Got it!
+      </button>
+    </div>` : `
+    <div style="height:3.5rem;display:flex;align-items:center;justify-content:center">
+      <span style="font-size:.75rem;color:var(--text3)">Flip the card to rate it</span>
+    </div>`}
+
+    <!-- Nav -->
     <div class="fc-nav">
       <button class="btn-outline" onclick="prevCard()">← Prev</button>
-      <span class="fc-count">${cardIdx+1} / ${c.concepts.length}</span>
+      <span class="fc-count">${cardIdx+1} / ${total}</span>
       <button class="btn-primary" onclick="nextCard()">Next →</button>
+    </div>
+
+    <div class="fc-keyboard-hint">
+      ← → navigate · Space = flip · G = got it · H = hard · R = again
     </div>
   </div>`;
 }
 
-function bindFlashcards(){}
-function flipCard(){ STATE.flashcardFlipped=!STATE.flashcardFlipped; render(); }
-function nextCard(){
-  const topics=Object.keys(CONCEPTS), c=CONCEPTS[topics[STATE.flashcardTopicIndex%topics.length]];
-  STATE.flashcardIndex=(STATE.flashcardIndex+1)%c.concepts.length; STATE.flashcardFlipped=false; render();
+function bindFlashcards() {
+  // Keyboard navigation
+  function onKey(e) {
+    if (!STATE.view === 'flashcards') return;
+    if (e.key === 'ArrowRight') { nextCard(); }
+    else if (e.key === 'ArrowLeft') { prevCard(); }
+    else if (e.key === ' ') { e.preventDefault(); flipCard(); }
+    else if (e.key.toLowerCase() === 'g') { rateCard('known'); }
+    else if (e.key.toLowerCase() === 'h') { rateCard('hard'); }
+    else if (e.key.toLowerCase() === 'r') { rateCard('skip'); }
+  }
+  document.addEventListener('keydown', onKey);
+  // Store cleanup reference
+  STATE._fcKeyHandler = onKey;
+
+  // Touch swipe support
+  const stage = document.getElementById('fc-stage');
+  if (!stage) return;
+  let startX = 0, startY = 0;
+
+  stage.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  stage.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 30 && Math.abs(dy) < 30) { flipCard(); return; }
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dx > 0 ? prevCard() : nextCard();
+    } else if (dy < -40 && STATE.flashcardFlipped) {
+      rateCard('known');
+    }
+  }, { passive: true });
 }
-function prevCard(){
-  const topics=Object.keys(CONCEPTS), c=CONCEPTS[topics[STATE.flashcardTopicIndex%topics.length]];
-  STATE.flashcardIndex=(STATE.flashcardIndex-1+c.concepts.length)%c.concepts.length; STATE.flashcardFlipped=false; render();
+
+function cleanupFlashcardListeners() {
+  if (STATE._fcKeyHandler) {
+    document.removeEventListener('keydown', STATE._fcKeyHandler);
+    STATE._fcKeyHandler = null;
+  }
 }
-function flashTopic(i){ STATE.flashcardTopicIndex=i; STATE.flashcardIndex=0; STATE.flashcardFlipped=false; render(); }
+
+function flipCard() {
+  STATE.flashcardFlipped = !STATE.flashcardFlipped;
+  // Smooth in-place flip without full re-render
+  const card = document.getElementById('fc-card');
+  if (card) {
+    card.classList.toggle('flipped', STATE.flashcardFlipped);
+    // Update action buttons without re-rendering whole page
+    const stage = document.getElementById('fc-stage');
+    if (stage) {
+      const actionsEl = stage.nextElementSibling;
+      if (actionsEl) {
+        const topics = Object.keys(CONCEPTS);
+        const topic  = topics[STATE.flashcardTopicIndex % topics.length];
+        const c = CONCEPTS[topic];
+        const cardIdx = STATE.flashcardIndex % c.concepts.length;
+        actionsEl.outerHTML = STATE.flashcardFlipped
+          ? `<div class="fc-actions">
+              <button class="fc-action-btn skip" onclick="rateCard('skip')"><span class="fc-action-icon">😰</span>Again</button>
+              <button class="fc-action-btn hard" onclick="rateCard('hard')"><span class="fc-action-icon">🤔</span>Hard</button>
+              <button class="fc-action-btn known" onclick="rateCard('known')"><span class="fc-action-icon">💪</span>Got it!</button>
+            </div>`
+          : `<div style="height:3.5rem;display:flex;align-items:center;justify-content:center">
+              <span style="font-size:.75rem;color:var(--text3)">Flip the card to rate it</span>
+            </div>`;
+      }
+    }
+  } else {
+    render();
+  }
+}
+
+function rateCard(rating) {
+  const topics   = Object.keys(CONCEPTS);
+  const topic    = topics[STATE.flashcardTopicIndex % topics.length];
+  const c        = CONCEPTS[topic];
+  const cardIdx  = STATE.flashcardIndex % c.concepts.length;
+  const total    = c.concepts.length;
+
+  if (!STATE.fcKnown) STATE.fcKnown = new Set();
+
+  if (rating === 'known') {
+    STATE.fcKnown.add(`${topic}_${cardIdx}`);
+    // Check if all cards in topic are known
+    if (STATE.fcKnown.size >= total) {
+      toast(`🎉 You've mastered all ${total} cards in ${topic}!`, 'levelup', 4000);
+      launchConfetti(100, true);
+      STATE.fcKnown = new Set(); // reset for replay
+    }
+  } else if (rating === 'skip') {
+    STATE.fcKnown.delete(`${topic}_${cardIdx}`);
+  }
+
+  // Always advance to next after rating
+  setTimeout(() => nextCard(), 180);
+}
+
+function nextCard() {
+  cleanupFlashcardListeners();
+  const topics = Object.keys(CONCEPTS);
+  const c = CONCEPTS[topics[STATE.flashcardTopicIndex % topics.length]];
+  STATE.flashcardIndex = (STATE.flashcardIndex + 1) % c.concepts.length;
+  STATE.flashcardFlipped = false;
+  render();
+}
+
+function prevCard() {
+  cleanupFlashcardListeners();
+  const topics = Object.keys(CONCEPTS);
+  const c = CONCEPTS[topics[STATE.flashcardTopicIndex % topics.length]];
+  STATE.flashcardIndex = (STATE.flashcardIndex - 1 + c.concepts.length) % c.concepts.length;
+  STATE.flashcardFlipped = false;
+  render();
+}
+
+function flashTopic(i) {
+  cleanupFlashcardListeners();
+  STATE.flashcardTopicIndex = i;
+  STATE.flashcardIndex = 0;
+  STATE.flashcardFlipped = false;
+  if (!STATE.fcKnown) STATE.fcKnown = new Set();
+  else STATE.fcKnown = new Set(); // reset known for new topic
+  render();
+}
 
 // ══════════════════════════════════════════════════════════════
 //  VIEW: SMART REVISION
@@ -1678,6 +1915,8 @@ function renderDailyConcept() {
   function boot() {
     try {
       window.__appReady = true;
+  window.rateCard = rateCard;
+  window.cleanupFlashcardListeners = cleanupFlashcardListeners;
       // Switch from loader to app
       var loader = document.getElementById('loader');
       var app    = document.getElementById('app');
