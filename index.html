@@ -1,28 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="SSC CGL Master — Gamified exam prep with 50 full papers, 50 topic tests, XP system, achievements, and cloud sync." />
-  <meta name="theme-color" content="#6366F1" />
-  <title>SSC CGL Master 🎯</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="description" content="SSC CGL Master — India's most focused SSC CGL Tier-1 preparation platform. 500+ questions, 50 mock tests, concept library and daily current affairs."/>
+  <meta name="theme-color" content="#6366F1"/>
+  <title>SSC CGL Master — Tier 1 Prep Platform</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css?v=9"/>
+  <style>
+    #loader{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:100vh;gap:.75rem;font-family:'Nunito',sans-serif;background:#F5F4FF;color:#6366F1;}
+    #loader-spinner{font-size:2.5rem;animation:lspin 1s linear infinite;}
+    @keyframes lspin{to{transform:rotate(360deg)}}
+    #loader-title{font-size:1.3rem;font-weight:900;margin:0;}
+    #loader-sub{font-size:.82rem;color:#818CF8;margin:0;}
+    #loader-err{display:none;margin-top:1rem;padding:.9rem 1.25rem;background:#FEF2F2;
+      border:1.5px solid #FECACA;border-radius:12px;color:#991B1B;font-size:.82rem;
+      font-weight:600;max-width:380px;text-align:center;line-height:1.6;}
+    #loader-btn{display:none;margin-top:.5rem;padding:.5rem 1.4rem;background:#6366F1;
+      color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.9rem;
+      font-weight:700;cursor:pointer;border-radius:8px;}
+    #app{display:none;}
+  </style>
 </head>
 <body>
-  <div id="app">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:1rem;font-family:'Nunito',sans-serif;background:#F5F4FF;color:#6366F1;">
-      <div style="font-size:3rem;animation:spin 1s linear infinite">🎯</div>
-      <div style="font-size:1.2rem;font-weight:800">SSC CGL Master</div>
-      <div style="font-size:.85rem;color:#818CF8">Loading your prep platform...</div>
-      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-    </div>
+  <div id="loader">
+    <div id="loader-spinner">🎯</div>
+    <p id="loader-title">SSC CGL Master</p>
+    <p id="loader-sub">Loading Tier-1 Prep Platform…</p>
+    <div id="loader-err"></div>
+    <button id="loader-btn" onclick="location.reload(true)">Reload →</button>
   </div>
-  <script src="js/questions.js"></script>
-  <script src="js/concepts.js"></script>
-  <script src="js/app.js"></script>
+  <div id="app"></div>
+
+  <script>
+    // Catch any script load / runtime errors before app boots
+    window.__appReady = false;
+    window.onerror = function(msg, src, line) {
+      document.getElementById('loader-err').style.display = 'block';
+      document.getElementById('loader-err').textContent = '⚠️ ' + msg + (src ? ' [' + src.split('/').pop() + ':' + line + ']' : '');
+      document.getElementById('loader-sub').textContent = 'Something went wrong — see error above.';
+      document.getElementById('loader-btn').style.display = 'inline-block';
+    };
+    // Show "stuck" notice after 10 s
+    setTimeout(function() {
+      if (!window.__appReady) {
+        document.getElementById('loader-sub').textContent = 'Taking longer than usual…';
+        document.getElementById('loader-btn').style.display = 'inline-block';
+      }
+    }, 10000);
+  </script>
+
+  <script src="js/questions.js?v=9"
+    onerror="window.onerror('Cannot load questions.js','questions.js',0)"></script>
+  <script src="js/concepts.js?v=9"
+    onerror="window.onerror('Cannot load concepts.js','concepts.js',0)"></script>
+  <script src="js/app.js?v=9"
+    onerror="window.onerror('Cannot load app.js','app.js',0)"></script>
 </body>
 </html>

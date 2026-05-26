@@ -210,24 +210,48 @@ const VIEWS = ['login','dashboard','fullTests','topicTests','preTest','test',
   'results','concepts','flashcards','examiner','profile','revision'];
 
 function render() {
-  const app=document.getElementById('app');
-  const fn = {
-    login:      ()=>{ app.innerHTML=renderLogin();      bindLogin(); },
-    dashboard:  ()=>{ app.innerHTML=renderDashboard();  bindDashboard(); },
-    fullTests:  ()=>{ app.innerHTML=renderFullTests();  },
-    topicTests: ()=>{ app.innerHTML=renderTopicTests(); },
-    preTest:    ()=>{ app.innerHTML=renderPreTest();    },
-    test:       ()=>{ app.innerHTML=renderTest();       bindTest(); },
-    results:    ()=>{ app.innerHTML=renderResults();    bindResults(); },
-    concepts:   ()=>{ app.innerHTML=renderConceptPage(); },
-    flashcards: ()=>{ app.innerHTML=renderFlashcards(); bindFlashcards(); },
-    examiner:   ()=>{ app.innerHTML=renderExaminer();   },
-    profile:    ()=>{ app.innerHTML=renderProfile();    bindProfile(); },
-    revision:   ()=>{ app.innerHTML=renderRevision();   },
-    dailyTest:  ()=>{ app.innerHTML=renderDailyTest();  bindDailyTest(); },
-    dailyConcept:()=>{ app.innerHTML=renderDailyConcept(); },
-  };
-  (fn[STATE.view]||fn.login)();
+  try {
+    const app = document.getElementById('app');
+    const loader = document.getElementById('loader');
+
+    // Show app, hide loader on first render
+    if (loader && loader.style.display !== 'none') {
+      loader.style.display = 'none';
+      app.style.display = 'block';
+    }
+
+    const fn = {
+      login:       ()=>{ app.innerHTML=renderLogin();       bindLogin(); },
+      dashboard:   ()=>{ app.innerHTML=renderDashboard();   bindDashboard(); },
+      fullTests:   ()=>{ app.innerHTML=renderFullTests();   },
+      topicTests:  ()=>{ app.innerHTML=renderTopicTests();  },
+      preTest:     ()=>{ app.innerHTML=renderPreTest();     },
+      test:        ()=>{ app.innerHTML=renderTest();        bindTest(); },
+      results:     ()=>{ app.innerHTML=renderResults();     bindResults(); },
+      concepts:    ()=>{ app.innerHTML=renderConceptPage(); },
+      flashcards:  ()=>{ app.innerHTML=renderFlashcards();  bindFlashcards(); },
+      examiner:    ()=>{ app.innerHTML=renderExaminer();    },
+      profile:     ()=>{ app.innerHTML=renderProfile();     bindProfile(); },
+      revision:    ()=>{ app.innerHTML=renderRevision();    },
+      dailyTest:   ()=>{ app.innerHTML=renderDailyTest();   bindDailyTest(); },
+      dailyConcept:()=>{ app.innerHTML=renderDailyConcept(); },
+      examInfo:    ()=>{ app.innerHTML=renderExamInfo(); },
+    };
+    (fn[STATE.view] || fn.login)();
+  } catch(err) {
+    // Show error in loader rather than freeze
+    const loader = document.getElementById('loader');
+    const errEl  = document.getElementById('loader-error');
+    const sub    = document.getElementById('loader-sub');
+    const btn    = document.getElementById('loader-refresh');
+    const app    = document.getElementById('app');
+    if (app) app.style.display = 'none';
+    if (loader) loader.style.display = 'flex';
+    if (errEl)  { errEl.style.display='block'; errEl.textContent='⚠️ Render error: ' + err.message; }
+    if (sub)    sub.textContent = 'An error occurred. Please reload.';
+    if (btn)    btn.style.display = 'inline-block';
+    console.error('Render error:', err);
+  }
 }
 
 // ── ANALYSIS ENGINE ───────────────────────────────────────────
@@ -346,15 +370,17 @@ function topbar(title='', showHome=true) {
 }
 
 const QUOTES=[
-  "The expert in anything was once a beginner.",
-  "Success is the sum of small efforts repeated day in and day out.",
-  "SSC CGL is not just an exam, it's a gateway to your dreams.",
-  "Hard work beats talent when talent doesn't work hard.",
-  "Consistency is the key to cracking SSC CGL.",
-  "Don't count the days, make the days count.",
-  "Every day is a new opportunity to improve your score.",
-  "Focus on progress, not perfection.",
-  "The difference between try and triumph is just a little umph.",
+  "SSC CGL is not just an exam — it is the gateway to a government career.",
+  "Every question you solve today is one less obstacle on exam day.",
+  "Consistency beats intensity. Study a little every day.",
+  "Quant, Reasoning, English, GK — master all four and nothing can stop you.",
+  "The SSC CGL topper was once exactly where you are right now.",
+  "Negative marking is not your enemy — carelessness is.",
+  "Your rank is decided by how well you use these 60 minutes.",
+  "Don't memorise — understand. SSC CGL rewards sharp thinking.",
+  "One correct answer = +2 marks. One wrong = -0.5. Choose wisely.",
+  "Review your mistakes. That is where improvement lives.",
+  "Speed and accuracy — the two weapons of every SSC CGL topper.",
 ];
 function rq(){ return QUOTES[new Date().getDay()%QUOTES.length]; }
 function greeting(){ const h=new Date().getHours(); return h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'; }
@@ -372,13 +398,13 @@ function renderLogin(){
       <div class="login-brand">
         <div class="login-logo-ring">🎯</div>
         <h1>SSC CGL Master</h1>
-        <p>India's smartest exam prep platform</p>
+        <p>Complete SSC CGL Tier-1 Preparation Platform</p>
       </div>
 
       <div class="login-features">
-        <div class="lf-item"><span>📋</span>50 Full Papers</div>
-        <div class="lf-item"><span>📚</span>50 Topic Tests</div>
-        <div class="lf-item"><span>🏆</span>12 Achievements</div>
+        <div class="lf-item"><span>📋</span>50 Mock Tests</div>
+        <div class="lf-item"><span>🎯</span>Tier-1 Pattern</div>
+        <div class="lf-item"><span>📅</span>Daily Questions</div>
         <div class="lf-item"><span>☁️</span>Cloud Sync</div>
       </div>
 
@@ -503,9 +529,9 @@ function renderDashboard(){
       <div class="qcard qc-full" onclick="navigate('fullTests')">
         <div class="qc-icon">📋</div>
         <div class="qc-title">Full Mock Tests</div>
-        <div class="qc-sub">50 papers · Level 1→5</div>
+        <div class="qc-sub">50 papers · Tier-1 Pattern · 4 Subjects</div>
         <div class="qc-progress-wrap"><div class="qc-progress" style="width:${fullDone/50*100}%"></div></div>
-        <div class="qc-meta">${fullDone}/50 completed · 100 Qs · 60 min</div>
+        <div class="qc-meta">${fullDone}/50 done · 100 Qs · 60 min · -0.5 NM</div>
         <div class="qc-arrow">→</div>
       </div>
       <div class="qcard qc-topic" onclick="navigate('topicTests')">
@@ -528,6 +554,13 @@ function renderDashboard(){
         <div class="qc-title">Flashcards</div>
         <div class="qc-sub">Flip-through concepts</div>
         <div class="qc-meta">All topics · Quick review</div>
+        <div class="qc-arrow">→</div>
+      </div>
+      <div class="qcard qc-info" onclick="navigate('examInfo')">
+        <div class="qc-icon">📌</div>
+        <div class="qc-title">SSC CGL Exam Info</div>
+        <div class="qc-sub">Pattern · Syllabus · Cut-offs</div>
+        <div class="qc-meta">Tier-1 · Tier-2 · Strategy</div>
         <div class="qc-arrow">→</div>
       </div>
     </div>
@@ -1639,8 +1672,185 @@ function renderDailyConcept() {
   </div>`;
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  // All functions are already global (top-level function declarations).
-  // Just call render() — no eval tricks needed.
-  render();
-});
+// ── BULLETPROOF INIT ─────────────────────────────────────────
+// Works whether DOM is still loading or already parsed
+(function() {
+  function boot() {
+    try {
+      window.__appReady = true;
+      // Switch from loader to app
+      var loader = document.getElementById('loader');
+      var app    = document.getElementById('app');
+      if (loader) loader.style.display = 'none';
+      if (app)    app.style.display    = 'block';
+      render();
+    } catch(e) {
+      var el  = document.getElementById('loader-err');
+      var sub = document.getElementById('loader-sub');
+      var btn = document.getElementById('loader-btn');
+      if (el)  { el.style.display = 'block'; el.textContent = '⚠️ ' + e.message; }
+      if (sub) sub.textContent = 'JS error — see message above.';
+      if (btn) btn.style.display = 'inline-block';
+      console.error('[SSC CGL Master] Boot error:', e);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot(); // DOM already ready (scripts loaded at end of body)
+  }
+})();
+
+// ══════════════════════════════════════════════════════════════
+//  SSC CGL EXAM INFO PAGE
+// ══════════════════════════════════════════════════════════════
+function renderExamInfo() {
+  return `
+  ${topbar('SSC CGL Exam Info')}
+  <div class="exam-info-page">
+
+    <!-- Hero -->
+    <div class="page-hero ei-hero">
+      <div class="ei-badge">📋 OFFICIAL PATTERN</div>
+      <h2>SSC CGL Tier-1 Exam</h2>
+      <p>Staff Selection Commission · Combined Graduate Level</p>
+      <div class="ei-chips">
+        <span>🎯 100 Questions</span>
+        <span>⏱ 60 Minutes</span>
+        <span>📊 200 Marks</span>
+        <span>➖ Negative Marking</span>
+      </div>
+    </div>
+
+    <!-- Marking Scheme -->
+    <div class="section-card">
+      <div class="sc-header"><h3>⚖️ Marking Scheme</h3></div>
+      <div class="ei-mark-grid">
+        <div class="ei-mark correct">
+          <div class="ei-mark-val">+2</div>
+          <div class="ei-mark-lbl">Correct Answer</div>
+        </div>
+        <div class="ei-mark wrong">
+          <div class="ei-mark-val">-0.5</div>
+          <div class="ei-mark-lbl">Wrong Answer</div>
+        </div>
+        <div class="ei-mark skip">
+          <div class="ei-mark-val">0</div>
+          <div class="ei-mark-lbl">Not Attempted</div>
+        </div>
+      </div>
+      <div class="ei-note">⚠️ Attempt only when you are at least 70% sure. Wrong answers cost 0.25 marks (0.5 ÷ 2).</div>
+    </div>
+
+    <!-- 4 Sections -->
+    <div class="section-card">
+      <div class="sc-header"><h3>📚 Section-wise Breakdown</h3></div>
+      <div class="ei-sections">
+        ${[
+          {icon:'🔢', name:'Quantitative Aptitude', qs:25, marks:50, color:'#6366F1',
+           topics:'Number System, Percentage, Profit-Loss, SI/CI, Ratio, Averages, Time-Work, Speed-Distance, Algebra, Geometry, Trigonometry, Data Interpretation, Mensuration, Mixture-Alligation'},
+          {icon:'🧠', name:'General Intelligence & Reasoning', qs:25, marks:50, color:'#0EA5E9',
+           topics:'Analogy, Classification, Series, Coding-Decoding, Blood Relations, Directions, Syllogism, Venn Diagrams, Statement-Conclusion, Ranking, Missing Number'},
+          {icon:'📖', name:'English Comprehension', qs:25, marks:50, color:'#8B5CF6',
+           topics:'Error Detection, Fill in Blanks, Synonyms, Antonyms, One Word Substitution, Idioms & Phrases, Sentence Improvement, Active-Passive, Direct-Indirect, Spelling, Para Jumbles'},
+          {icon:'🌍', name:'General Awareness', qs:25, marks:50, color:'#F59E0B',
+           topics:'Ancient/Medieval/Modern History, Indian Geography, Polity, Economy, Physics, Chemistry, Biology, Computers, Sports, Static GK, Current Affairs'},
+        ].map(s=>`
+          <div class="ei-section" style="border-left:4px solid ${s.color}">
+            <div class="ei-sec-head">
+              <span class="ei-sec-icon">${s.icon}</span>
+              <div>
+                <div class="ei-sec-name" style="color:${s.color}">${s.name}</div>
+                <div class="ei-sec-meta">${s.qs} Questions · ${s.marks} Marks</div>
+              </div>
+            </div>
+            <div class="ei-sec-topics">${s.topics}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Previous Year Cut-offs -->
+    <div class="section-card">
+      <div class="sc-header"><h3>🏆 Previous Year Cut-offs (Tier-1)</h3><span class="sc-sub">General Category</span></div>
+      <div class="ei-cutoff-table">
+        <table>
+          <thead><tr><th>Year</th><th>Cut-off (Gen)</th><th>Max Marks</th><th>% Required</th></tr></thead>
+          <tbody>
+            <tr><td>2023</td><td>140-150</td><td>200</td><td>70-75%</td></tr>
+            <tr><td>2022</td><td>145-155</td><td>200</td><td>72-77%</td></tr>
+            <tr><td>2021</td><td>139-148</td><td>200</td><td>69-74%</td></tr>
+            <tr><td>2020</td><td>142-150</td><td>200</td><td>71-75%</td></tr>
+            <tr><td>2019</td><td>137-146</td><td>200</td><td>68-73%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ei-note">Target: 75%+ (150+ marks) to safely qualify Tier-1. Category-wise cut-offs differ.</div>
+    </div>
+
+    <!-- Topic Weightage -->
+    <div class="section-card">
+      <div class="sc-header"><h3>📊 High-Weightage Topics (PYQ Analysis)</h3></div>
+      <div class="ei-weightage">
+        ${[
+          {sub:'Quant 🔢', topics:[['DI & Mensuration','4-5 Qs'],['Algebra & Geometry','3-4 Qs'],['%,P&L,SI/CI','4-5 Qs'],['Speed,Work,Pipes','3-4 Qs']]},
+          {sub:'Reasoning 🧠', topics:[['Analogy & Classification','4-6 Qs'],['Number/Letter Series','3-4 Qs'],['Coding-Decoding','2-3 Qs'],['Syllogism & Venn','2-3 Qs']]},
+          {sub:'English 📖', topics:[['Error Detection','3-4 Qs'],['Fill in Blanks','3-4 Qs'],['Idioms & OWS','3-4 Qs'],['Synonyms & Antonyms','2-3 Qs']]},
+          {sub:'GK 🌍', topics:[['Modern History','3-4 Qs'],['Indian Polity','3-4 Qs'],['Science (Phy+Che+Bio)','5-6 Qs'],['Geography & Economy','4-5 Qs']]},
+        ].map(sec=>`
+          <div class="ei-weight-sec">
+            <div class="ei-weight-head">${sec.sub}</div>
+            ${sec.topics.map(([t,q])=>`
+              <div class="ei-weight-row">
+                <span>${t}</span>
+                <span class="ei-weight-qs">${q}</span>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Strategy -->
+    <div class="section-card">
+      <div class="sc-header"><h3>💡 Topper Strategy for Tier-1</h3></div>
+      <div class="ei-strategy">
+        ${[
+          ['⏱ Time Management','Spend max 40 sec/question. Do your strongest section first. Leave DI for last if time is short.'],
+          ['🎯 Attempt Order','Start with Reasoning (fastest) → English → GK → Quant. Adjust based on your strengths.'],
+          ['❌ Negative Marking','Skip if you cannot eliminate at least 2 options. Never random guess.'],
+          ['📊 Target Score','Aim for 160+ (80%). Cut-off is usually 140-150 so 160 gives comfortable buffer.'],
+          ['🔄 Daily Practice','Solve 50 PYQs daily. Focus on accuracy over speed for first 2 months.'],
+          ['📅 Last Month','Take 2 full mock tests per week. Analyze mistakes section-wise.'],
+        ].map(([h,b])=>`
+          <div class="ei-strat-row">
+            <div class="ei-strat-head">${h}</div>
+            <div class="ei-strat-body">${b}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Tier Structure -->
+    <div class="section-card">
+      <div class="sc-header"><h3>🗂 SSC CGL Exam Structure</h3></div>
+      <div class="ei-tiers">
+        ${[
+          {tier:'Tier 1', desc:'Objective MCQ · Online · 60 min · 100 Qs · 200 marks · Qualifying + Merit', highlight:true},
+          {tier:'Tier 2', desc:'Objective MCQ · Online · 2 Sessions · Paper-I mandatory for all · Paper-II/III for specific posts', highlight:false},
+          {tier:'Document Verification', desc:'Final round after Tier-2 for provisionally selected candidates', highlight:false},
+        ].map(t=>`
+          <div class="ei-tier ${t.highlight?'active':''}">
+            <div class="ei-tier-name">${t.tier} ${t.highlight?'← You are here':''}</div>
+            <div class="ei-tier-desc">${t.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="ei-cta">
+      <button class="btn-primary lg" onclick="navigate('fullTests')">📋 Start Full Mock Test</button>
+      <button class="btn-outline" onclick="navigate('concepts')">📚 Study Concepts</button>
+    </div>
+  </div>`;
+}

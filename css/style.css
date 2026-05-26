@@ -724,3 +724,74 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; tra
 .cod-text { font-size: .82rem; color: var(--text2); line-height: 1.7; }
 .cod-link { display: inline-block; margin-top: .6rem; color: #0EA5E9; font-size: .8rem; font-weight: 700; text-decoration: none; }
 .cod-link:hover { text-decoration: underline; }
+
+/* ── SSC CGL EXAM INFO PAGE ─────────────────────────────────── */
+.exam-info-page { max-width:860px; margin:0 auto; padding:1.25rem 1rem; display:flex; flex-direction:column; gap:1rem; }
+
+.ei-hero { background:linear-gradient(135deg,#1E1B4B,#4338CA) !important; }
+.ei-badge { display:inline-block; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); padding:.2rem .7rem; border-radius:99px; font-size:.72rem; font-weight:800; letter-spacing:.08em; margin-bottom:.5rem; }
+.ei-chips { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.75rem; }
+.ei-chips span { background:rgba(255,255,255,.15); padding:.25rem .7rem; border-radius:99px; font-size:.75rem; font-weight:700; }
+
+.ei-mark-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin-bottom:.75rem; }
+.ei-mark { text-align:center; padding:1rem; border-radius:var(--r); border:2px solid; }
+.ei-mark.correct { background:#ECFDF5; border-color:#A7F3D0; }
+.ei-mark.wrong   { background:#FEF2F2; border-color:#FECACA; }
+.ei-mark.skip    { background:var(--bg2); border-color:var(--border); }
+.ei-mark-val { font-size:1.75rem; font-weight:900; }
+.ei-mark.correct .ei-mark-val { color:#22C55E; }
+.ei-mark.wrong   .ei-mark-val { color:#EF4444; }
+.ei-mark.skip    .ei-mark-val { color:var(--text2); }
+.ei-mark-lbl { font-size:.75rem; font-weight:700; color:var(--text2); margin-top:.2rem; }
+.ei-note { font-size:.78rem; color:#92400E; background:#FEF3C7; border:1px solid #FDE68A; border-radius:var(--r-sm); padding:.55rem .75rem; margin-top:.5rem; }
+
+.ei-sections { display:flex; flex-direction:column; gap:.6rem; }
+.ei-section { background:var(--bg); border-radius:var(--r-sm); padding:.85rem 1rem; }
+.ei-sec-head { display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem; }
+.ei-sec-icon { font-size:1.3rem; }
+.ei-sec-name { font-weight:800; font-size:.9rem; }
+.ei-sec-meta { font-size:.72rem; color:var(--text2); }
+.ei-sec-topics { font-size:.75rem; color:var(--text2); line-height:1.6; }
+
+.ei-cutoff-table { overflow-x:auto; }
+.ei-cutoff-table table { width:100%; border-collapse:collapse; font-size:.82rem; }
+.ei-cutoff-table th,.ei-cutoff-table td { padding:.5rem .9rem; text-align:left; border-bottom:1px solid var(--border); }
+.ei-cutoff-table th { background:var(--bg); font-weight:800; color:var(--text2); font-size:.75rem; }
+.ei-cutoff-table tbody tr:hover td { background:var(--bg2); }
+
+.ei-weightage { display:grid; grid-template-columns:repeat(2,1fr); gap:.75rem; }
+.ei-weight-sec { background:var(--bg); border-radius:var(--r-sm); padding:.85rem; }
+.ei-weight-head { font-weight:800; font-size:.85rem; color:var(--text); margin-bottom:.5rem; padding-bottom:.4rem; border-bottom:1px solid var(--border); }
+.ei-weight-row { display:flex; justify-content:space-between; padding:.25rem 0; font-size:.78rem; color:var(--text2); border-bottom:1px solid var(--border); }
+.ei-weight-row:last-child { border:none; }
+.ei-weight-qs { font-weight:700; color:var(--primary); }
+
+.ei-strategy { display:flex; flex-direction:column; gap:.5rem; }
+.ei-strat-row { background:var(--bg); border-radius:var(--r-sm); padding:.75rem; border-left:3px solid var(--primary); }
+.ei-strat-head { font-weight:800; font-size:.85rem; color:var(--text); margin-bottom:.25rem; }
+.ei-strat-body { font-size:.8rem; color:var(--text2); line-height:1.6; }
+
+.ei-tiers { display:flex; flex-direction:column; gap:.5rem; }
+.ei-tier { background:var(--bg); border-radius:var(--r-sm); padding:.85rem 1rem; border:1.5px solid var(--border); }
+.ei-tier.active { background:var(--primary-l); border-color:var(--primary); }
+.ei-tier-name { font-weight:800; font-size:.88rem; color:var(--text); margin-bottom:.2rem; }
+.ei-tier.active .ei-tier-name { color:var(--primary); }
+.ei-tier-desc { font-size:.78rem; color:var(--text2); }
+
+.ei-cta { display:flex; gap:.75rem; flex-wrap:wrap; }
+
+/* Dashboard: exam info card color */
+.qc-info::before { background:#1E1B4B; }
+.qc-info:hover { border-color:#1E1B4B; }
+.qc-info:hover .qc-arrow { color:#1E1B4B; }
+
+/* Dashboard: quick-grid now 3 per row on desktop */
+@media(min-width:640px) {
+  .quick-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Exam info responsive */
+@media(max-width:600px) {
+  .ei-weightage { grid-template-columns:1fr; }
+  .ei-mark-grid { grid-template-columns:repeat(3,1fr); gap:.5rem; }
+}
